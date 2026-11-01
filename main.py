@@ -120,6 +120,14 @@ def ask_number(prompt, min_value, max_value):
 
         return number
 
+def ask_text(prompt):
+    """빈 값이 아닌 문자열을 입력받을 때까지 반복 (앞뒤 공백 제거)"""
+    while True:
+        text = input(prompt).strip()
+        if text == "":
+            print("입력이 비어 있습니다. 내용을 입력해 주세요.")
+            continue
+        return text
 
 class QuizGame:
     """퀴즈 게임 전체(메뉴, 진행, 데이터)를 관리하는 클래스"""
@@ -212,7 +220,24 @@ class QuizGame:
         return score
 
     def add_quiz(self):
-        print("\n[퀴즈 추가] 준비 중입니다.")
+        """새 퀴즈를 입력받아 목록에 추가하고 파일에 저장"""
+        print("\n=== 새 퀴즈 추가 ===")
+        question = ask_text("문제를 입력하세요: ")
+
+        choices = []
+        for i in range(1, 5):
+            choice = ask_text(f"선택지 {i}번을 입력하세요: ")
+            choices.append(choice)
+
+        answer = ask_number("정답 번호를 입력하세요 (1-4): ", 1, 4)
+
+        new_quiz = Quiz(question, choices, answer)
+        self.quizzes.append(new_quiz)
+        self.save()
+
+        print("\n✅ 퀴즈가 추가되었습니다!")
+        new_quiz.display(len(self.quizzes))
+        print(f"  정답: {answer}번")  
 
     def show_quiz_list(self):
         print("\n[퀴즈 목록] 준비 중입니다.")
