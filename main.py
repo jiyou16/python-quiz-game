@@ -1,3 +1,10 @@
+import json
+import os
+
+# 프로젝트 루트(main.py가 있는 폴더)의 state.json
+STATE_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "state.json")
+
+
 class Quiz:
     """퀴즈 한 문제를 나타내는 클래스"""
 
@@ -19,6 +26,31 @@ class Quiz:
     def is_correct(self, user_answer):
         """사용자 답(1~4)이 정답인지 True/False로 반환"""
         return user_answer == self.answer
+
+    def to_dict(self):
+        """JSON으로 저장할 수 있도록 딕셔너리로 변환"""
+        return {
+            "question": self.question,
+            "choices": self.choices,
+            "answer": self.answer,
+        }
+
+    @classmethod
+    def from_dict(cls, data):
+        """딕셔너리에서 Quiz 객체를 만듦 (형식이 잘못되면 ValueError)"""
+        question = data["question"]
+        choices = data["choices"]
+        answer = data["answer"]
+
+        if not isinstance(question, str) or not question.strip():
+            raise ValueError("문제 형식이 올바르지 않습니다.")
+        if (not isinstance(choices, list) or len(choices) != 4
+                or not all(isinstance(c, str) for c in choices)):
+            raise ValueError("선택지 형식이 올바르지 않습니다.")
+        if isinstance(answer, bool) or not isinstance(answer, int) or not 1 <= answer <= 4:
+            raise ValueError("정답 번호가 올바르지 않습니다.")
+
+        return cls(question, choices, answer)
 
 
 def get_default_quizzes():
@@ -93,8 +125,57 @@ class QuizGame:
     """퀴즈 게임 전체(메뉴, 진행, 데이터)를 관리하는 클래스"""
 
     def __init__(self):
-        self.quizzes = get_default_quizzes()  # 퀴즈 목록 (Quiz 객체 리스트)
-        self.best_score = None                # 최고 점수 (아직 안 풀었으면 None)
+        self.quizzes = []        # 퀴즈 목록 (Quiz 객체 리스트)
+        self.best_score = None   # 최고 점수 (아직 안 풀었으면 None)
+        self.load()
+
+    def load(self):
+        """state.json에서 퀴즈와 최고 점수를 불러옴"""
+        if not os.path.exists(STATE_FILE):
+            print("저장된 데이터가 없어 기본 퀴즈로 시작합니다.")
+            self.reset_to_default()
+            return
+
+        try:
+            with open(STATE_FILE, "r", encoding="utf-8") as f:
+                data = json.load(f)
+
+            quizzes = [Quiz.from_dict(q) for q in data["quizzes"]]
+            best_score = data.get("best_score")
+            if best_score is not None and (
+                isinstance(best_score, bool) or not isinstance(best_score, int) or best_score < 0
+            ):
+                raise ValueError("최고 점수 형식이 올바르지 않습니다.")
+
+            self.quizzes = quizzes
+            self.best_score = best_score
+            print(f"저장된 데이터를 불러왔습니다. (퀴즈 {len(self.quizzes)}개)")
+
+        except (json.JSONDecodeError, KeyError, TypeError, ValueError):
+            print("⚠️ state.json 파일이 손상되어 기본 퀴즈로 복구합니다.")
+            self.reset_to_default()
+        except OSError as e:
+            print(f"⚠️ 파일을 읽을 수 없어 기본 퀴즈로 시작합니다. ({e})")
+            self.quizzes = get_default_quizzes()
+            self.best_score = None
+
+    def reset_to_default(self):
+        """기본 퀴즈로 초기화하고 파일에 저장"""
+        self.quizzes = get_default_quizzes()
+        self.best_score = None
+        self.save()
+
+    def save(self):
+        """퀴즈와 최고 점수를 state.json에 저장"""
+        data = {
+            "quizzes": [quiz.to_dict() for quiz in self.quizzes],
+            "best_score": self.best_score,
+        }
+        try:
+            with open(STATE_FILE, "w", encoding="utf-8") as f:
+                json.dump(data, f, ensure_ascii=False, indent=2)
+        except OSError as e:
+            print(f"⚠️ 저장에 실패했습니다. ({e})")
 
     def show_menu(self):
         """메뉴 출력"""
@@ -154,17 +235,19 @@ class QuizGame:
             elif choice == 4:
                 self.show_best_score()
             else:
+                self.save()
                 print("게임을 종료합니다. 안녕히 가세요!")
                 break
 
 
 def main():
     game = QuizGame()
-    game.run()
+    try:
+        game.run()
+    except (KeyboardInterrupt, EOFError):
+        print("\n입력이 중단되어 저장 후 안전하게 종료합니다.")
+        game.save()
 
 
 if __name__ == "__main__":
-    try:
-        main()
-    except (KeyboardInterrupt, EOFError):
-        print("\n입력이 중단되어 프로그램을 안전하게 종료합니다.")
+    main()
