@@ -19,6 +19,50 @@ class Quiz:
     def is_correct(self, user_answer):
         """사용자 답(1~4)이 정답인지 True/False로 반환"""
         return user_answer == self.answer
+def get_default_quizzes():
+    """기본 퀴즈 목록(리눅스 & Docker 기초)을 Quiz 객체 리스트로 반환"""
+    return [
+        Quiz(
+            "현재 작업 중인 디렉터리의 절대 경로를 출력하는 명령어는?",
+            ["ls", "cd", "pwd", "mkdir"],
+            3,
+        ),
+        Quiz(
+            "숨김 파일까지 포함해 자세한 목록을 보는 명령어는?",
+            ["ls", "ls -l", "ls -la", "ls -d"],
+            3,
+        ),
+        Quiz(
+            "내용이 없는 빈 파일을 만드는 명령어는?",
+            ["mkdir", "touch", "cat", "echo"],
+            2,
+        ),
+        Quiz(
+            "chmod 755를 적용한 결과 권한 문자열은?",
+            ["rwxr-xr-x", "rw-r--r--", "rwx------", "rw-------"],
+            1,
+        ),
+        Quiz(
+            "rmdir 명령어로 삭제할 수 있는 것은?",
+            ["모든 파일", "빈 디렉터리", "내용이 있는 디렉터리", "숨김 파일"],
+            2,
+        ),
+        Quiz(
+            "실행 중인 컨테이너에 새 셸을 열고, 나와도 컨테이너가 계속 실행되는 명령어는?",
+            ["docker attach", "docker exec", "docker run", "docker logs"],
+            2,
+        ),
+        Quiz(
+            "docker run -p 8080:80 에서 8080은 무엇인가?",
+            ["컨테이너 포트", "호스트 포트", "이미지 버전", "프로세스 ID"],
+            2,
+        ),
+        Quiz(
+            "컨테이너를 삭제해도 데이터가 남도록 Docker가 관리하는 저장 공간은?",
+            ["이미지", "레이어", "볼륨", "태그"],
+            3,
+        ),
+    ]
 def ask_number(prompt, min_value, max_value):
     """숫자를 입력받아 min_value~max_value 범위면 int로 반환. 아니면 다시 묻는다."""
     while True:
