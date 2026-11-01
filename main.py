@@ -240,7 +240,14 @@ class QuizGame:
         print(f"  정답: {answer}번")  
 
     def show_quiz_list(self):
-        print("\n[퀴즈 목록] 준비 중입니다.")
+        """저장된 퀴즈의 문제 목록을 출력"""
+        if not self.quizzes:
+            print("\n등록된 퀴즈가 없습니다. 먼저 퀴즈를 추가해 주세요.")
+            return
+
+        print(f"\n=== 퀴즈 목록 (총 {len(self.quizzes)}개) ===")
+        for i, quiz in enumerate(self.quizzes, start=1):
+            print(f"{i}. {quiz.question}")
 
     def show_best_score(self):
         print("\n[점수 확인] 준비 중입니다.")
