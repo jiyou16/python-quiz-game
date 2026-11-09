@@ -63,11 +63,13 @@ python-quiz-game/
 
 | 이름 | 종류 | 역할 |
 |---|---|---|
-| `Quiz` | 클래스 | 퀴즈 한 문제(문제, 선택지, 정답). 출력, 정답 확인, 딕셔너리 변환 메서드 |
+| `STATE_FILE` | 상수 | state.json 경로 (main.py가 있는 폴더 기준) |
+| `Quiz` | 클래스 | 퀴즈 한 문제(문제, 선택지, 정답). `display`, `is_correct`, `to_dict`, `from_dict` |
 | `get_default_quizzes()` | 함수 | 기본 퀴즈 8개를 `Quiz` 객체 리스트로 반환 |
 | `ask_number()` | 함수 | 범위 안의 숫자를 입력받을 때까지 반복 |
 | `ask_text()` | 함수 | 비어 있지 않은 문자열을 입력받을 때까지 반복 |
-| `QuizGame` | 클래스 | 퀴즈 목록과 최고 점수를 관리. 메뉴, 퀴즈 풀기/추가/목록, 점수 확인, 저장/불러오기 |
+| `QuizGame` | 클래스 | 퀴즈 목록과 최고 점수를 관리. `load`, `save`, `reset_to_default`, `show_menu`, `play_quiz`, `update_best_score`, `add_quiz`, `show_quiz_list`, `show_best_score`, `run` |
+| `main()` | 함수 | 게임 실행. `Ctrl+C`·입력 종료 시 저장 후 안전 종료 |
 
 ## 설계 설명
 
@@ -89,6 +91,23 @@ python-quiz-game/
 
 **나눈 기준:** 데이터가 **어디서 들어오는지**(키보드 vs 파일)와 **무엇을 하는지**(검증 vs 저장)로 나눴습니다. 키보드 입력은 잘못되면 다시 물어보면 되지만, 파일 데이터는 잘못되면 다시 물어볼 수 없어서 기본값으로 복구해야 합니다. 대응 방식이 다르기 때문에 분리했습니다. 덕분에 게임 로직은 "이미 검증된 값"만 받아 기능에 집중할 수 있습니다.
 
+### 요구 변경 시 영향 범위
+
+요구사항이 바뀌었을 때 고쳐야 하는 파일과 메서드입니다. 코드는 모두 `main.py` 한 파일에 있습니다.
+
+| 요구 변경 예시 | 영향 파일 | 관련 메서드/위치 | 비고 |
+|---|---|---|---|
+| 퀴즈에 필드 추가 (예: 힌트, 카테고리) | `main.py`, `README.md` | `Quiz.__init__`, `Quiz.display`, `Quiz.to_dict`, `Quiz.from_dict`, `get_default_quizzes`, `QuizGame.add_quiz` | 기존 state.json에는 새 필드가 없으므로 `from_dict`에서 `data.get("hint", "")`처럼 기본값을 줘야 예전 파일도 읽을 수 있음 |
+| 선택지 개수 변경 (4개 → 5개) | `main.py`, `README.md` | `Quiz.from_dict`(개수·정답 범위 검증), `QuizGame.add_quiz`(입력 반복 횟수·정답 범위), `QuizGame.play_quiz`(정답 입력 범위), `get_default_quizzes` | 숫자 4가 여러 곳에 있으므로 상수(예: `CHOICE_COUNT = 4`)로 빼면 한 곳만 고치면 됨 |
+| 점수 방식 변경 (예: 맞힌 개수로 저장) | `main.py`, `README.md` | `QuizGame.play_quiz`(점수 계산), `QuizGame.update_best_score`, `QuizGame.show_best_score`, `QuizGame.load`(best_score 검증) | 기존 저장값과 의미가 달라지므로 state.json 초기화 필요 |
+| 저장 파일 이름·위치 변경 | `main.py`, `.gitignore`, `README.md` | `STATE_FILE` 상수 | 경로를 상수 하나로 관리해서 한 줄만 수정 |
+| 저장 방식을 데이터베이스(SQLite)로 변경 | `main.py`, `README.md` | `QuizGame.load`, `QuizGame.save`, `QuizGame.reset_to_default` | 데이터 I/O가 이 세 메서드에 모여 있어서 게임 로직(`play_quiz`, `add_quiz` 등)은 수정하지 않아도 됨 |
+| 입력 규칙 변경 (예: 문제 최대 길이 제한) | `main.py` | `ask_number`, `ask_text` | 입력 검증이 두 함수에 모여 있어서 다른 코드는 그대로 |
+| 메뉴 추가 (예: 퀴즈 삭제) | `main.py`, `README.md` | `QuizGame.show_menu`, `QuizGame.run`(메뉴 범위 1~5 → 1~6, 분기 추가), 새 메서드(예: `delete_quiz`)에서 `save` 호출 | README 기능 목록도 수정 |
+| 랜덤 출제 | `main.py` | `QuizGame.play_quiz` | `import random` 후 `self.quizzes` 복사본을 섞어서 출제. 원본 순서와 저장 파일은 그대로 |
+
+역할별로 코드를 나눠 둔 덕분에(입력 검증 / 데이터 I/O / 게임 로직) 대부분의 변경이 한두 곳에서 끝납니다.
+
 ## 데이터 파일 설명 (state.json)
 
 - **경로:** 프로젝트 루트(`main.py`와 같은 폴더)의 `state.json`
@@ -96,6 +115,20 @@ python-quiz-game/
 - **인코딩:** UTF-8 (한글이 그대로 보이도록 `ensure_ascii=False`로 저장)
 - **저장 시점:** 퀴즈 추가 직후, 최고 점수 갱신 직후, 메뉴 5번 종료 시, `Ctrl+C` 중단 시
 - **Git 관리:** 실행할 때마다 내용이 바뀌는 데이터라 `.gitignore`에 넣어 업로드하지 않습니다.
+
+### JSON 형식을 선택한 이유
+
+- **가독성:** 텍스트 파일이라 에디터나 `cat state.json`으로 바로 열어 볼 수 있습니다. `ensure_ascii=False`, `indent=2`로 저장해서 한글이 그대로 보이고 들여쓰기도 되어 있어, 사람이 읽고 직접 고치기도 쉽습니다.
+- **구조화된 데이터를 그대로 표현:** 퀴즈는 "문제 + 선택지 리스트 + 정답"이 묶인 구조이고, 그런 퀴즈가 여러 개 있습니다. JSON은 리스트와 객체를 중첩할 수 있어서 이 구조를 그대로 담을 수 있습니다. Python의 `list`/`dict`와 1:1로 대응해서 변환 코드도 짧습니다(`to_dict`, `from_dict`).
+- **표준 라이브러리로 처리:** `json` 모듈이 Python에 내장되어 있어 별도 설치가 필요 없습니다.
+- **다른 방식과 비교:**
+
+| 방식 | 이 프로젝트에 맞지 않는 이유 |
+|---|---|
+| 일반 텍스트(.txt) | 문제·선택지·정답을 구분하는 규칙을 직접 만들고 파싱 코드를 따로 짜야 함 |
+| CSV | 표 형태라 "선택지 4개" 같은 리스트를 한 칸에 담기 어렵고, 최고 점수 같은 단일 값과 섞기 불편함 |
+| pickle | 사람이 읽을 수 없는 바이너리이고, Python 외 다른 언어에서 못 읽음. 신뢰할 수 없는 파일을 열면 보안 위험 |
+| 데이터베이스 | 퀴즈 수십 개 규모에는 과하고, 설치·설정이 필요함 (데이터가 커지면 아래처럼 대안이 됨) |
 
 ### 스키마
 
@@ -173,17 +206,18 @@ python-quiz-game/
 ### 정답 판정 예시
 ![정답 판정](docs/images/08_answer_check.png)
 
-### 메뉴와 주요 기능 (추가, 목록, 점수 확인, 종료)
+### 메뉴와 주요 기능 (목록, 점수 확인, 종료)
 ![메뉴와 주요 기능](docs/images/09_menu_features.png)
 ## 커밋 기록
 
-총 커밋 수: **18개** (이 섹션을 추가하기 직전 기준, merge 커밋 포함)
+총 커밋 수: **19개** (이 README 수정 커밋 직전 기준, merge 커밋 포함)
 
 ```
 $ git rev-list --count HEAD
-18
+19
 
 $ git log --oneline
+1ec2c1c docs: README에 커밋 수 기록 추가
 4865112 docs: 실행 화면 스크린샷 추가
 f8af92e docs: README에 설계 설명 추가
 8d68228 docs: README 중복 내용 정리
