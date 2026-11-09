@@ -175,3 +175,31 @@ python-quiz-game/
 
 ### 메뉴와 주요 기능 (추가, 목록, 점수 확인, 종료)
 ![메뉴와 주요 기능](docs/images/09_menu_features.png)
+## 커밋 기록
+
+총 커밋 수: **18개** (이 섹션을 추가하기 직전 기준, merge 커밋 포함)
+
+```
+$ git rev-list --count HEAD
+18
+
+$ git log --oneline
+4865112 docs: 실행 화면 스크린샷 추가
+f8af92e docs: README에 설계 설명 추가
+8d68228 docs: README 중복 내용 정리
+b4620af change
+dce6b08 docs: clone 실습으로 README 한 줄 추가
+20fef4d docs: clone 실습으로 README 한 줄 추가
+b6848c5 docs: README 작성
+5afef22 feat: 최고 점수 기능 구현
+deee1c7 feat: 퀴즈 목록 기능 구현
+e622617 feat: 퀴즈 추가 기능 구현
+29f077a feat: state.json 저장/불러오기 기능 추가
+bb2f337 merge: feature/quizgame 브랜치 병합
+216b977 refactor: QuizGame 클래스로 구조화
+c6aed40 feat: 퀴즈 풀기 기능 추가
+1ba67b0 feat: 기본 퀴즈 데이터 추가
+75fab6a feat: Quiz 클래스 작성
+df09295 feat: 메뉴 및 입력 검증 추가
+61d3d31 chore: 프로젝트 초기 설정
+```
