@@ -107,3 +107,5 @@ python-quiz-game/
 - `feature/quizgame` 브랜치에서 QuizGame 클래스 구조화 작업을 한 뒤 `main`에 병합했습니다.
 - 커밋 기록 확인: `git log --oneline --graph`
 - clone 실습: 별도 폴더(quiz-clone)에서 이 줄을 추가해 push하고, 원래 폴더에서 pull로 가져왔습니다.
+
+- clone 실습: 별도 폴더(quiz-clone)에서 이 줄을 추가해 push하고, 원래 폴더에서 pull로 가져왔습니다.
